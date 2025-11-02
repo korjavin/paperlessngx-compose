@@ -275,11 +275,40 @@ sudo tar -czf "$BACKUP_DIR/documents.tar.gz" /path/to/paperless/data /path/to/pa
 cp .env "$BACKUP_DIR/env.backup"
 ```
 
+## GitOps Auto-Deployment (Optional)
+
+Enable automatic redeployment when you push changes to the repository.
+
+### Setup Portainer Webhook
+
+1. **In Portainer**:
+   - Go to **Stacks** → **paperless**
+   - Scroll to **Webhooks** section
+   - Click **Add a webhook**
+   - Copy the webhook URL
+
+2. **In GitHub**:
+   - Go to: https://github.com/yourusername/paperlessngx-compose/settings/secrets/actions/new
+   - **Name**: `PORTAINER_REDEPLOY_HOOK`
+   - **Secret**: (paste the webhook URL from step 1)
+   - Click **Add secret**
+
+3. **Configure Portainer Stack**:
+   - In Portainer, edit the **paperless** stack
+   - Change **Repository reference** from `master` to **`deploy`**
+   - Click **Update the stack**
+
+Now every push to `master` branch automatically redeploys the stack via webhook!
+
 ## Updates
 
 ### Updating Paperless
 
-In Portainer:
+**With Auto-Deploy (webhook configured):**
+- Updates happen automatically when paperless-ngx releases new versions
+- Or manually trigger: Go to repository → **Actions** → **Deploy Paperless-ngx Stack** → **Run workflow**
+
+**Manual Update:**
 1. Go to **Stacks** → **paperless**
 2. Click **Pull and redeploy**
 3. Paperless will update to the latest version

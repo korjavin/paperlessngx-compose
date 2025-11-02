@@ -1,0 +1,32 @@
+name: Deploy Paperless-ngx Stack
+
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Create/Update deploy branch
+        run: |
+          git config user.name "GitHub Actions Bot"
+          git config user.email "actions@github.com"
+          git checkout -B deploy
+          git push origin deploy --force
+
+      - name: Trigger Portainer Redeploy Webhook
+        uses: distributhor/workflow-webhook@v3
+        with:
+          webhook_url: ${{ secrets.PORTAINER_REDEPLOY_HOOK }}
+          webhook_secret: "trigger"
+        # Note: If PORTAINER_REDEPLOY_HOOK secret is not set, this step will fail
+        # but won't block the workflow. Set the secret in repository settings to enable auto-deploy.
