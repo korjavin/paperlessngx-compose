@@ -1,0 +1,41 @@
+# Environment files with secrets
+.env
+.env.local
+*.env
+
+# But keep the example
+!.env.example
+
+# Document storage directories
+data/
+media/
+export/
+consume/
+
+# Database and Redis data (if using local volumes)
+db-data/
+redis-data/
+
+# Backups
+backup/
+*.sql
+*.sql.gz
+*.tar.gz
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor files
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+
+# Logs
+*.log
+
+# Temporary files
+tmp/
+temp/

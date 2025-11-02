@@ -1,0 +1,116 @@
+version: '3.8'
+
+services:
+  paperless-db:
+    image: ${POSTGRES_IMAGE:-postgres:16-alpine}
+    container_name: ${DB_CONTAINER_NAME:-paperless-db}
+    restart: unless-stopped
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-paperless}
+      POSTGRES_USER: ${POSTGRES_USER:-paperless}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    networks:
+      - internal
+
+  paperless-redis:
+    image: ${REDIS_IMAGE:-redis:7-alpine}
+    container_name: ${REDIS_CONTAINER_NAME:-paperless-redis}
+    restart: unless-stopped
+    volumes:
+      - redis-data:/data
+    networks:
+      - internal
+
+  paperless-webserver:
+    image: ${PAPERLESS_IMAGE:-ghcr.io/paperless-ngx/paperless-ngx:latest}
+    container_name: ${PAPERLESS_CONTAINER_NAME:-paperless-webserver}
+    restart: unless-stopped
+    depends_on:
+      - paperless-db
+      - paperless-redis
+    networks:
+      - internal
+      - traefik_default
+    volumes:
+      # Document storage (can be encrypted with VeraCrypt)
+      - ${PAPERLESS_DATA_DIR:-./data}:/usr/src/paperless/data
+      - ${PAPERLESS_MEDIA_DIR:-./media}:/usr/src/paperless/media
+
+      # Export directory
+      - ${PAPERLESS_EXPORT_DIR:-./export}:/usr/src/paperless/export
+
+      # Consume directory (where you upload documents)
+      - ${PAPERLESS_CONSUME_DIR:-./consume}:/usr/src/paperless/consume
+    environment:
+      # --- Redis Configuration ---
+      PAPERLESS_REDIS: redis://paperless-redis:6379
+
+      # --- Database Configuration ---
+      PAPERLESS_DBENGINE: postgresql
+      PAPERLESS_DBHOST: paperless-db
+      PAPERLESS_DBNAME: ${POSTGRES_DB:-paperless}
+      PAPERLESS_DBUSER: ${POSTGRES_USER:-paperless}
+      PAPERLESS_DBPASS: ${POSTGRES_PASSWORD}
+      PAPERLESS_DBPORT: 5432
+
+      # --- Security ---
+      PAPERLESS_SECRET_KEY: ${PAPERLESS_SECRET_KEY}
+      PAPERLESS_URL: https://${PAPERLESS_HOST}
+
+      # --- User/Group ---
+      USERMAP_UID: ${USERMAP_UID:-1000}
+      USERMAP_GID: ${USERMAP_GID:-1000}
+
+      # --- Timezone & Locale ---
+      PAPERLESS_TIME_ZONE: ${PAPERLESS_TIME_ZONE:-UTC}
+      PAPERLESS_OCR_LANGUAGE: ${PAPERLESS_OCR_LANGUAGE:-eng}
+      PAPERLESS_OCR_LANGUAGES: ${PAPERLESS_OCR_LANGUAGES:-}
+
+      # --- OAuth2 / SSO Configuration ---
+      # Disable built-in login when using OAuth2
+      PAPERLESS_DISABLE_REGULAR_LOGIN: ${PAPERLESS_DISABLE_REGULAR_LOGIN:-false}
+      PAPERLESS_AUTO_LOGIN_USERNAME: ${PAPERLESS_AUTO_LOGIN_USERNAME:-}
+      PAPERLESS_COOKIE_PREFIX: ${PAPERLESS_COOKIE_PREFIX:-}
+
+      # --- Admin User (created on first run) ---
+      PAPERLESS_ADMIN_USER: ${PAPERLESS_ADMIN_USER:-admin}
+      PAPERLESS_ADMIN_PASSWORD: ${PAPERLESS_ADMIN_PASSWORD:-}
+      PAPERLESS_ADMIN_MAIL: ${PAPERLESS_ADMIN_MAIL:-}
+
+      # --- Optional Features ---
+      PAPERLESS_OCR_MODE: ${PAPERLESS_OCR_MODE:-skip}
+      PAPERLESS_OCR_SKIP_ARCHIVE_FILE: ${PAPERLESS_OCR_SKIP_ARCHIVE_FILE:-never}
+      PAPERLESS_CONSUMER_POLLING: ${PAPERLESS_CONSUMER_POLLING:-0}
+      PAPERLESS_CONSUMER_RECURSIVE: ${PAPERLESS_CONSUMER_RECURSIVE:-false}
+      PAPERLESS_CONSUMER_SUBDIRS_AS_TAGS: ${PAPERLESS_CONSUMER_SUBDIRS_AS_TAGS:-false}
+
+    labels:
+      # --- Enable Traefik ---
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik_default"
+
+      # --- Router Configuration ---
+      - "traefik.http.routers.paperless.rule=Host(`${PAPERLESS_HOST}`)"
+      - "traefik.http.routers.paperless.entrypoints=websecure"
+      - "traefik.http.routers.paperless.tls.certresolver=${TRAEFIK_CERTRESOLVER:-myresolver}"
+
+      # --- Service Configuration ---
+      - "traefik.http.services.paperless.loadbalancer.server.port=8000"
+
+      # --- OAuth2 Protection with Auto-Redirect ---
+      - "traefik.http.routers.paperless.middlewares=auth-errors@docker,forward-auth@docker"
+
+networks:
+  internal:
+    name: ${INTERNAL_NETWORK_NAME:-paperless_internal}
+  traefik_default:
+    external: true
+    name: ${TRAEFIK_NETWORK_NAME:-traefik_default}
+
+volumes:
+  db-data:
+    name: ${DB_VOLUME_NAME:-paperless_db-data}
+  redis-data:
+    name: ${REDIS_VOLUME_NAME:-paperless_redis-data}
