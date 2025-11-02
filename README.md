@@ -266,10 +266,13 @@ sudo podman logs paperless-redis
    - Check `USERMAP_UID` and `USERMAP_GID` match directory ownership
    - Run: `sudo chown -R 1000:1000 /path/to/paperless`
 
-4. **OCR not working:**
+4. **OCR not working / Language packages not found:**
+   - Use **3-letter ISO 639-2 codes** (e.g., `eng`, `deu`, `rus`, not `en`, `de`, `ru`)
    - Set `PAPERLESS_OCR_LANGUAGE` to your document language
-   - Add additional languages to `PAPERLESS_OCR_LANGUAGES`
+   - Add additional languages to `PAPERLESS_OCR_LANGUAGES` (space-separated)
+   - Available languages: `eng deu fra spa ita nld pol rus chi-sim chi-tra jpn`
    - Use `PAPERLESS_OCR_MODE=redo` or `force` if needed
+   - Example: `PAPERLESS_OCR_LANGUAGES=rus deu` for Russian and German
 
 5. **Documents not consumed:**
    - Check consume directory permissions
