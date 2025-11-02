@@ -183,6 +183,41 @@ To automatically log in users after OAuth2 authentication:
 
 **Note:** This requires all users to share the same Paperless account. For per-user accounts, you'll need custom integration with OAuth2-proxy headers.
 
+## Email/SMTP Configuration (Optional)
+
+Paperless can send emails for notifications, sharing documents, and more.
+
+### Setup SMTP in Portainer
+
+Add these environment variables (example for Mailjet):
+
+```
+PAPERLESS_EMAIL_HOST=in-v3.mailjet.com
+PAPERLESS_EMAIL_PORT=587
+PAPERLESS_EMAIL_HOST_USER=your-mailjet-api-key
+PAPERLESS_EMAIL_HOST_PASSWORD=your-mailjet-secret-key
+PAPERLESS_EMAIL_FROM=noreply@yourdomain.com
+PAPERLESS_EMAIL_USE_TLS=true
+PAPERLESS_EMAIL_USE_SSL=false
+PAPERLESS_EMAIL_TASK_ENABLED=true
+```
+
+### SMTP Configuration Notes
+
+- **STARTTLS (port 587)**: Set `USE_TLS=true`, `USE_SSL=false`
+- **SSL/TLS (port 465)**: Set `USE_TLS=false`, `USE_SSL=true`
+- **Gmail**: Use an [App Password](https://support.google.com/accounts/answer/185833)
+- **Mailjet**: Use API Key as username, Secret Key as password
+
+### What Email Features Enable
+
+- ✅ Email notifications for document processing errors
+- ✅ Share documents via email link
+- ✅ Saved view subscriptions (regular email reports)
+- ✅ Password reset emails (if using local auth)
+
+**Note:** Email is completely optional. Paperless works perfectly without it.
+
 ## Document Storage Encryption (Second Iteration)
 
 The document storage paths are prepared for encryption using VeraCrypt or similar tools.
