@@ -23,6 +23,24 @@ services:
     networks:
       - internal
 
+  paperless-tika:
+    image: ${TIKA_IMAGE:-apache/tika:latest}
+    container_name: ${TIKA_CONTAINER_NAME:-paperless-tika}
+    restart: unless-stopped
+    networks:
+      - internal
+
+  paperless-gotenberg:
+    image: ${GOTENBERG_IMAGE:-gotenberg/gotenberg:8}
+    container_name: ${GOTENBERG_CONTAINER_NAME:-paperless-gotenberg}
+    restart: unless-stopped
+    networks:
+      - internal
+    command:
+      - "gotenberg"
+      - "--chromium-disable-javascript=true"
+      - "--chromium-allow-list=file:///tmp/.*"
+
   paperless-webserver:
     image: ${PAPERLESS_IMAGE:-ghcr.io/paperless-ngx/paperless-ngx:latest}
     container_name: ${PAPERLESS_CONTAINER_NAME:-paperless-webserver}
@@ -30,6 +48,8 @@ services:
     depends_on:
       - paperless-db
       - paperless-redis
+      - paperless-tika
+      - paperless-gotenberg
     networks:
       - internal
       - traefik_default
@@ -95,6 +115,11 @@ services:
       PAPERLESS_CONSUMER_POLLING: ${PAPERLESS_CONSUMER_POLLING:-0}
       PAPERLESS_CONSUMER_RECURSIVE: ${PAPERLESS_CONSUMER_RECURSIVE:-false}
       PAPERLESS_CONSUMER_SUBDIRS_AS_TAGS: ${PAPERLESS_CONSUMER_SUBDIRS_AS_TAGS:-false}
+
+      # --- Tika & Gotenberg (Office Document Support) ---
+      PAPERLESS_TIKA_ENABLED: ${PAPERLESS_TIKA_ENABLED:-true}
+      PAPERLESS_TIKA_ENDPOINT: ${PAPERLESS_TIKA_ENDPOINT:-http://paperless-tika:9998}
+      PAPERLESS_TIKA_GOTENBERG_ENDPOINT: ${PAPERLESS_TIKA_GOTENBERG_ENDPOINT:-http://paperless-gotenberg:3000}
 
     labels:
       # --- Enable Traefik ---
